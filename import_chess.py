@@ -19,7 +19,6 @@ def get_active_divisions(session):
     return session.query(Division).where(Division.is_active)
 
 
-
 def get_division_data(division):
     url = f'https://www.chess.com/leagues/champion/{division}'
     req = Http.request('GET', url)
@@ -28,8 +27,6 @@ def get_division_data(division):
     json_res = json.loads(leagues.attrs['data-json'])
     rankings = list(map(lambda rec: standing_to_record(division, rec), json_res['divisionData']['standings']))
     return rankings
-
-
 
 
 def get_user_games(division: Division, username: str):
@@ -70,9 +67,6 @@ def get_user_games_for_month(division, year, month, username: str):
         game = Game(data)
         if division.start_time <= game.end_time <= division.end_time:
             yield game
-
-
-
 
 
 if __name__ == "__main__":

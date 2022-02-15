@@ -21,7 +21,7 @@ def get_stats_data(session):
          ORDER BY division, ts, ranking
     """)
     records = list(res)
-
+    # gsheet doesn't handle datetime so needs to be converted to iso format (yyyy-mm-ddTHH:MM:SS)
     return list(records[0].keys()), list(map(lambda r: (r[0], r[1].isoformat(), *r[2:]), records))
 
 
@@ -36,6 +36,5 @@ def update_sheet(spreadsheet_id, headers, rows):
 if __name__ == "__main__":
     config = config.get_config()
     session = setup_db(config['dsn'])
-    # update sheet
     headers, sheet_data = get_stats_data(session)
     update_sheet(config['sheet_id'], headers, sheet_data)
