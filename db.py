@@ -1,20 +1,11 @@
-import urllib3
-from bs4 import BeautifulSoup
-import json
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from configparser import ConfigParser
-import gspread
 import re
 import datetime
 
-SQLALCHEMY_DSN = "postgresql+psycopg2://{username}:{password}@{host}:{port}/{db}"
-
 Base = declarative_base()
-Http = urllib3.PoolManager()
 
 
 class Division(Base):
@@ -106,123 +97,9 @@ class Game(Base):
         self.division = data['division']
 
 
-def standing_to_record(division, el):
-    return Stat(division, el['username'], int(el['stats']['trophyCount']), int(el['stats']['ranking']))
-
-
-def get_division_data(division):
-    url = f'https://www.chess.com/leagues/champion/{division}'
-    req = Http.request('GET', url)
-    soup = BeautifulSoup(req.data, 'html.parser')
-    leagues = soup.find(id='leagues-division')
-    json_res = json.loads(leagues.attrs['data-json'])
-    rankings = list(map(lambda rec: standing_to_record(division, rec), json_res['divisionData']['standings']))
-    return rankings
-
-
 def setup_db(dsn):
     engine = sqlalchemy.create_engine(dsn)
     Base.metadata.create_all(engine)
     session_maker = sqlalchemy.orm.sessionmaker()
     session_maker.configure(bind=engine)
     return session_maker()
-
-
-def get_active_divisions(session):
-    return session.query(Division).where(Division.is_active)
-
-
-def update_sheet(spreadsheet_id, rows):
-    gc = gspread.service_account()
-    sh = gc.open_by_key(spreadsheet_id)
-    data = sh.worksheet('Data')
-    data.update('A2', rows)
-
-
-def get_stats_data(cursor):
-    res = cursor.execute("""
-        SELECT stats.division
-             , stats.ts
-             , stats.username
-             , stats.trophy
-             , stats.ranking
-             , stats.delta_60min
-             , stats.is_most_recent
-             , stats.downtime
-             , stats.delta_1d
-             , stats.delta_2d
-             , stats.downtime_1d
-             , stats.downtime_2d 
-          FROM division_stats_overview stats
-         ORDER BY division, ts, ranking
-    """)
-    records = list(res)
-
-    return list(map(lambda r: (r[0], r[1].isoformat(), *r[2:]), records))
-
-
-def get_user_games(division: Division, username: str):
-    year = division.start_time.year
-    month = division.start_time.month
-
-    games = list(get_user_games_for_month(division, year, month, username))
-
-    if division.end_time.year != year or division.end_time.month != month:
-        games.extend(get_user_games_for_month(division, division.end_time.year, division.end_time.month, username))
-
-    return games
-
-
-def get_user_games_for_month(division, year, month, username: str):
-    url = f"https://api.chess.com/pub/player/{username}/games/{year}/{month:02d}"
-    req = Http.request('GET', url)
-    res = json.loads(req.data)
-
-    fields = [
-        'url', 'time_control', 'end_time', 'time_class', 'rules',
-        'white:username', 'white:rating', 'white:result',
-        'black:username', 'black:rating', 'black:result', 'uuid', 'time_class', 'pgn'
-    ]
-
-    def get_from_json(obj, path: str):
-        try:
-            first, second = path.split(':')
-            return obj[first][second]
-        except ValueError:
-            return obj.get(path)
-
-    for game in res['games']:
-        data = {'username': username, 'division': division.id}
-        for field in fields:
-            data[field.replace(":", "_")] = get_from_json(game, field)
-
-        game = Game(data)
-        if division.start_time <= game.end_time <= division.end_time:
-            yield game
-
-
-def get_config():
-    config = ConfigParser()
-    config.read("auth.ini")
-    return {
-        "dsn": SQLALCHEMY_DSN.format_map(dict(config['db'])),
-        "sheet_id": config['sheet']['id']
-    }
-
-
-if __name__ == "__main__":
-    config = get_config()
-    session = setup_db(config['dsn'])
-
-    for division in get_active_divisions(session):
-        standings = get_division_data(division.id)
-        session.add_all(standings)
-        for player in division.players:
-            games = get_user_games(division, player)
-            stmt = pg_insert(Game).values(list(map(lambda g: g.to_dict(), games))).on_conflict_do_nothing()
-            session.execute(stmt)
-        session.commit()
-
-    # update sheet
-    sheet_data = get_stats_data(session)
-    update_sheet(config['sheet_id'], sheet_data)
