@@ -18,7 +18,7 @@ def get_stats_data(session):
              , stats.downtime_1d
              , stats.downtime_2d 
           FROM division_stats_overview stats
-         ORDER BY division, ts, ranking
+         ORDER BY division, ts DESC, ranking
     """)
     records = list(res)
     # gsheet doesn't handle datetime so needs to be converted to iso format (yyyy-mm-ddTHH:MM:SS)
