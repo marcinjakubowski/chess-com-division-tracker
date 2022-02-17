@@ -3,9 +3,9 @@ import urllib3
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import insert as pg_insert
-from db import Game, Stat, Division, setup_db
-import config
+from common import generate_months
+from db import Game, Stat, Division, Db
+import re
 
 
 Http = urllib3.PoolManager()
@@ -13,10 +13,6 @@ Http = urllib3.PoolManager()
 
 def standing_to_record(division, el):
     return Stat(division, el['username'], int(el['stats']['trophyCount']), int(el['stats']['ranking']))
-
-
-def get_active_divisions(session):
-    return session.query(Division).where(Division.is_active)
 
 
 def get_division_data(division):
@@ -29,22 +25,6 @@ def get_division_data(division):
     return rankings
 
 
-def generate_months(start_date: datetime, end_date: datetime):
-    year = start_date.year
-    month = start_date.month
-    end_year = end_date.year
-    end_month = end_date.month
-
-    while True:
-        yield year, month
-
-        if year == end_year and month == end_month:
-            return
-
-        month = month % 12 + 1
-        year = year if month != 1 else year + 1
-
-
 def get_user_games(username: str, start_date: datetime, end_date: datetime):
     return filter(lambda g: start_date <= g.end_time <= end_date,
                   reduce(lambda x, y: x+y,
@@ -55,8 +35,8 @@ def get_user_games(username: str, start_date: datetime, end_date: datetime):
                   )
 
 
-def get_user_games_for_month(username: str, year: int, month: int):
-    url = f"https://api.chess.com/pub/player/{username}/games/{year}/{month:02d}"
+def get_user_games_by_url(url):
+    username = re.match(r".*\/player\/(.*?)/", url).groups()[0]
     req = Http.request('GET', url)
     res = json.loads(req.data)
 
@@ -81,19 +61,19 @@ def get_user_games_for_month(username: str, year: int, month: int):
         yield Game(data)
 
 
-if __name__ == "__main__":
-    config = config.get_config()
-    session = setup_db(config['dsn'])
+def get_user_games_for_month(username: str, year: int, month: int):
+    url = f"https://api.chess.com/pub/player/{username}/games/{year}/{month:02d}"
+    return get_user_games_by_url(url)
 
-    for division in get_active_divisions(session):
-        standings = get_division_data(division.id)
-        session.add_all(standings)
+
+if __name__ == "__main__":
+    db = Db()
+
+    for division in db.get_active_divisions():
         for player in division.players:
-            games = get_user_games(player, division.start_time, division.end_time)
-            stmt = pg_insert(Game).values(list(map(lambda g: {
-                **g.to_dict(),
-                "division": division.id
-            }, games))).on_conflict_do_nothing()
-            session.execute(stmt)
-        session.commit()
+            games = list(map(lambda g: {**g.to_dict(), "division": division.id},
+                             get_user_games(player, division.start_time, division.end_time)))
+            db.add_games(games, commit=False)
+        standings = get_division_data(division.id)
+        db.add_standings(standings)
 

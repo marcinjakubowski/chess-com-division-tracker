@@ -2,8 +2,11 @@ import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 import re
 import datetime
+
+import config
 
 Base = declarative_base()
 
@@ -106,3 +109,26 @@ def setup_db(dsn):
     session_maker = sqlalchemy.orm.sessionmaker()
     session_maker.configure(bind=engine)
     return session_maker()
+
+
+class Db:
+    session = None
+
+    def get_active_divisions(self):
+        return self.session.query(Division).where(Division.is_active)
+
+    def __init__(self, dsn=None):
+        if dsn is None:
+            dsn = config.get_config()['dsn']
+        self.session = setup_db(dsn)
+
+    def add_games(self, games, commit=True):
+        stmt = pg_insert(Game).values(list(map(lambda g: g.to_dict() if isinstance(g, Game) else g, games))).on_conflict_do_nothing()
+        self.session.execute(stmt)
+        if commit:
+            self.session.commit()
+
+    def add_standings(self, standings, commit=True):
+        self.session.add_all(standings)
+        if commit:
+            self.session.commit()
