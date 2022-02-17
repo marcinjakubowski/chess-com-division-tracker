@@ -1,9 +1,9 @@
+from functools import reduce
 import urllib3
 from bs4 import BeautifulSoup
 import json
-
+from datetime import datetime
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-
 from db import Game, Stat, Division, setup_db
 import config
 
@@ -29,19 +29,33 @@ def get_division_data(division):
     return rankings
 
 
-def get_user_games(division: Division, username: str):
-    year = division.start_time.year
-    month = division.start_time.month
+def generate_months(start_date: datetime, end_date: datetime):
+    year = start_date.year
+    month = start_date.month
+    end_year = end_date.year
+    end_month = end_date.month
 
-    games = list(get_user_games_for_month(division, year, month, username))
+    while True:
+        yield year, month
 
-    if division.end_time.year != year or division.end_time.month != month:
-        games.extend(get_user_games_for_month(division, division.end_time.year, division.end_time.month, username))
+        if year == end_year and month == end_month:
+            return
 
-    return games
+        month = month % 12 + 1
+        year = year if month != 1 else year + 1
 
 
-def get_user_games_for_month(division, year, month, username: str):
+def get_user_games(username: str, start_date: datetime, end_date: datetime):
+    return filter(lambda g: start_date <= g.end_time <= end_date,
+                  reduce(lambda x, y: x+y,
+                         [
+                             list(get_user_games_for_month(username, year, month))
+                             for year, month in generate_months(start_date, end_date)
+                         ])
+                  )
+
+
+def get_user_games_for_month(username: str, year: int, month: int):
     url = f"https://api.chess.com/pub/player/{username}/games/{year}/{month:02d}"
     req = Http.request('GET', url)
     res = json.loads(req.data)
@@ -59,14 +73,12 @@ def get_user_games_for_month(division, year, month, username: str):
         except ValueError:
             return obj.get(path)
 
-    for game in res['games']:
-        data = {'username': username, 'division': division.id}
+    for game in res.get('games', []):
+        data = {'username': username}
         for field in fields:
             data[field.replace(":", "_")] = get_from_json(game, field)
 
-        game = Game(data)
-        if division.start_time <= game.end_time <= division.end_time:
-            yield game
+        yield Game(data)
 
 
 if __name__ == "__main__":
@@ -77,8 +89,11 @@ if __name__ == "__main__":
         standings = get_division_data(division.id)
         session.add_all(standings)
         for player in division.players:
-            games = get_user_games(division, player)
-            stmt = pg_insert(Game).values(list(map(lambda g: g.to_dict(), games))).on_conflict_do_nothing()
+            games = get_user_games(player, division.start_time, division.end_time)
+            stmt = pg_insert(Game).values(list(map(lambda g: {
+                **g.to_dict(),
+                "division": division.id
+            }, games))).on_conflict_do_nothing()
             session.execute(stmt)
         session.commit()
 

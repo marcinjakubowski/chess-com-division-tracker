@@ -94,7 +94,10 @@ class Game(Base):
         self.time_class = data['time_class']
         self.opening = Game.get_opening(data['pgn'])
         self.opening_code = Game.get_opening_code(data['pgn'])
-        self.division = data['division']
+        self.division = data.get('division')
+
+    def __repr__(self):
+        return f"Game({self.id})\n"
 
 
 def setup_db(dsn):
