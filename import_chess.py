@@ -1,4 +1,6 @@
 from functools import reduce
+from time import sleep
+
 import urllib3
 from bs4 import BeautifulSoup
 import json
@@ -74,6 +76,22 @@ if __name__ == "__main__":
             games = list(map(lambda g: {**g.to_dict(), "division": division.id},
                              get_user_games(player, division.start_time, division.end_time)))
             db.add_games(games, commit=False)
-        standings = get_division_data(division.id)
-        db.add_standings(standings)
+
+        retry_count = 0
+        finished = False
+
+        # attempt to get division data 5 times, catching any exceptions (http, wrong content, whatever)
+        while not finished:
+            # noinspection PyBroadException
+            try:
+                standings = get_division_data(division.id)
+                db.add_standings(standings)
+                finished = True
+            except Exception as e:
+                retry_count += 1
+                if retry_count >= 5:
+                    raise e
+                sleep(1.0)
+
+
 
