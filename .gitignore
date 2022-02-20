@@ -269,3 +269,7 @@ cython_debug/
 #.idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm
+
+target/
+dbt_packages/
+logs/
