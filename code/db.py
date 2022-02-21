@@ -14,12 +14,20 @@ Base = declarative_base()
 class Division(Base):
     __tablename__ = 'division'
     id = sqlalchemy.Column(sqlalchemy.Text, primary_key=True)
+    level = sqlalchemy.Column(sqlalchemy.Text)
     description = sqlalchemy.Column(sqlalchemy.Text)
     players = sqlalchemy.Column(sqlalchemy.ARRAY(sqlalchemy.Text, dimensions=1))
     is_active = sqlalchemy.Column(sqlalchemy.Boolean)
     start_time = sqlalchemy.Column(sqlalchemy.DateTime)
     end_time = sqlalchemy.Column(sqlalchemy.DateTime)
 
+    def __init__(self, id, level, description, start_time, end_time, is_active):
+        self.id = id
+        self.level = level
+        self.description = description
+        self.start_time = start_time
+        self.end_time = end_time
+        self.is_active = is_active
 
 class Stat(Base):
     __tablename__ = 'division_stats'
@@ -92,7 +100,7 @@ class Game(Base):
         self.url = data['url']
         self.time_control = data['time_control']
         self.rules = data['rules']
-        self.end_time = datetime.datetime.fromtimestamp(data['end_time'])
+        self.end_time = datetime.datetime.utcfromtimestamp(data['end_time'])
         self.username = data['username']
         self.time_class = data['time_class']
         self.opening = Game.get_opening(data['pgn'])

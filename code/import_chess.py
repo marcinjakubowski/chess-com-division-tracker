@@ -2,6 +2,7 @@ from functools import reduce
 from time import sleep
 
 import urllib3
+import argparse
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
@@ -17,8 +18,26 @@ def standing_to_record(division, el):
     return Stat(division, el['username'], int(el['stats']['trophyCount']), int(el['stats']['ranking']))
 
 
-def get_division_data(division):
-    url = f'https://www.chess.com/leagues/champion/{division}'
+def get_player_division(username):
+    url = f'https://www.chess.com/callback/leagues/user-league/search/{username}'
+    req = Http.request('GET', url)
+    res = json.loads(req.data)
+
+    div = res['division']
+    id = div['name'][1:] # first letter is the indication of type
+    
+    level = div['league']['code']
+    # divisions end at 19:59:59 a week after they start at 20:00:00
+    start_time = datetime.utcfromtimestamp(div['endTime'] + 1 - 7 * 24 * 3600) 
+    end_time = datetime.utcfromtimestamp(div['endTime'])
+    description = f"{div['league']['name']} - {div['year']} Week {div['week']}"
+    is_active = div['inProgress']
+
+    return Division(id, level, description, start_time, end_time, is_active)
+
+
+def get_division_data(level, division):
+    url = f'https://www.chess.com/leagues/{level}/{division}'
     req = Http.request('GET', url)
     soup = BeautifulSoup(req.data, 'html.parser')
     leagues = soup.find(id='leagues-division')
@@ -69,29 +88,39 @@ def get_user_games_for_month(username: str, year: int, month: int):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Import chess.com league and games data for a given player')
+    parser.add_argument('username', help='chess.com username')
+
+    args = parser.parse_args()
+
+
     db = Db()
+    division = get_player_division(args.username)
+    division = db.session.merge(division)
 
-    for division in db.get_active_divisions():
-        for player in division.players:
-            games = list(map(lambda g: {**g.to_dict(), "division": division.id},
-                             get_user_games(player, division.start_time, division.end_time)))
-            db.add_games(games, commit=False)
+    if not division.is_active:
+        exit(0)
 
-        retry_count = 0
-        finished = False
+    for player in division.players:
+        games = list(map(lambda g: {**g.to_dict(), "division": division.id},
+                            get_user_games(player, division.start_time, division.end_time)))
+        db.add_games(games, commit=False)
 
-        # attempt to get division data 5 times, catching any exceptions (http, wrong content, whatever)
-        while not finished:
-            # noinspection PyBroadException
-            try:
-                standings = get_division_data(division.id)
-                db.add_standings(standings)
-                finished = True
-            except Exception as e:
-                retry_count += 1
-                if retry_count >= 5:
-                    raise e
-                sleep(1.0)
+    retry_count = 0
+    finished = False
+
+    # attempt to get division data 5 times, catching any exceptions (http, wrong content, whatever)
+    while not finished:
+        # noinspection PyBroadException
+        try:
+            standings = get_division_data(division.level, division.id)
+            db.add_standings(standings)
+            finished = True
+        except Exception as e:
+            retry_count += 1
+            if retry_count >= 5:
+                raise e
+            sleep(1.0)
 
 
 
