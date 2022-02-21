@@ -22,10 +22,16 @@ sources:
         columns:
           - name: id
             description: chess.com id of the division
+          - name: level
+            description: division level code (e.g. champion, silver)
           - name: description
             description: Name of the division
           - name: players
             description: array of players of interest participating in the division
+          - name: start_time
+            description: start date and time of the division in UTC
+          - name: end_time
+            description: end date and time of the division in UTC
           - name: is_active
             description: flag whether a given division is currently actively monitored
       - name: games
