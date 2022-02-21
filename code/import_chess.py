@@ -100,7 +100,7 @@ if __name__ == "__main__":
     db.session.commit()
 
     if not division.is_active:
-        exit(0)
+        exit(1)
 
     for player in division.players:
         games = list(map(lambda g: {**g.to_dict(), "division": division.id},
