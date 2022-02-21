@@ -97,6 +97,7 @@ if __name__ == "__main__":
     db = Db()
     division = get_player_division(args.username)
     division = db.session.merge(division)
+    db.session.commit()
 
     if not division.is_active:
         exit(0)
