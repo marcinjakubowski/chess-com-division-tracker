@@ -1,21 +1,21 @@
 WITH ts AS (
     SELECT (date_trunc('hour', stats.ts) + (date_part('minute', stats.ts)::integer / 5)::double precision * '00:05:00'::interval) AT TIME ZONE 'UTC' AT TIME ZONE 'CET' AS ts,
-    stats.division,
-    stats.username,
-    stats.ranking,
-    stats.trophy
-    FROM {{ source('chesscom', 'division_stats') }} stats
+         , stats.division
+         , stats.username
+         , stats.ranking
+         , stats.troph
+      FROM {{ source('chesscom', 'division_stats') }} stats
 ), calc1 AS (
-    SELECT ts.ts,
-    ts.division,
-    ts.username,
-    ts.ranking,
-    ts.trophy,
-        CASE
-            WHEN ts.ts = max(ts.ts) OVER (PARTITION BY ts.division) THEN 1
-            ELSE 0
-        END AS is_most_recent
-    FROM ts
+    SELECT ts.ts
+         , ts.division
+         , ts.username
+         , ts.ranking
+         , ts.trophy
+         , CASE
+             WHEN ts.ts = MAX(ts.ts) OVER (PARTITION BY ts.division) THEN 1
+             ELSE 0
+           END AS is_most_recent
+      FROM ts
 ), calc2 AS (
     SELECT cur.ts
          , cur.division

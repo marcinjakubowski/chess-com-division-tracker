@@ -13,30 +13,15 @@ WITH data AS (
          , games.time_class
          , games.rules
          , games.end_time
-         , CASE
-               WHEN games.white_username = games.username THEN 'white'
-               ELSE 'black'
-           END AS user_color
-         , CASE
-               WHEN games.white_username = games.username THEN games.white_rating
-               ELSE games.black_rating
-           END AS user_rating
-         , CASE
-               WHEN games.white_username = games.username THEN games.white_result
-               ELSE games.black_result
-           END AS user_result
-         , CASE
-               WHEN games.white_username = games.username THEN games.black_rating
-               ELSE games.white_rating
-           END AS opponent_rating
-         , CASE
-               WHEN games.white_username = games.username THEN games.black_result
-               ELSE games.white_result
-           END AS opponent_result
+         , {{ match_username('\'white\'', '\'black\'') }} AS user_color
+         , {{ match_username('games.white_rating', 'games.black_rating') }} AS user_rating
+         , {{ match_username('games.white_result', 'games.black_result') }} AS user_result
+         , {{ match_username('games.black_rating', 'games.white_rating') }} AS opponent_rating
+         , {{ match_username('games.black_rating', 'games.white_rating') }} AS opponent_result
          , games.opening
          , games.opening_code
          , openings.name AS opening_short
-      FROM {{ source('chesscom', 'games' )}} games
+      FROM {{ source('chesscom', 'games' ) }} games
       LEFT
       JOIN {{ ref('opening') }} openings ON openings.code = games.opening_code
        AND games.rules = 'chess'
