@@ -92,7 +92,7 @@ if __name__ == "__main__":
     parser.add_argument('username', help='chess.com username')
 
     args = parser.parse_args()
-
+    username = args.username
 
     db = Db()
     division = get_player_division(args.username)
@@ -102,7 +102,12 @@ if __name__ == "__main__":
     if not division.is_active:
         exit(1)
 
-    for player in division.players:
+    # ensure games are downloaded for the player passed from the argument
+    # as well as any other players specified in the division
+    # use case folding as the username case in the db and from the arg can differ
+    players = set({v.casefold(): v for v in division.players + [username]}.values())
+
+    for player in players:
         games = list(map(lambda g: {**g.to_dict(), "division": division.id},
                             get_user_games(player, division.start_time, division.end_time)))
         db.add_games(games, commit=False)
