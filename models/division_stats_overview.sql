@@ -85,8 +85,10 @@ SELECT final.ts
      , final.downtime_1d
      , final.downtime_2d
   FROM final
- WHERE final.ranking <= 20
-    OR username = 'DamianoLew95'
+ WHERE EXISTS (SELECT 1 FROM division WHERE division.id = final.division AND division.is_active)
+   AND (   final.ranking <= 20
+        OR username = 'DamianoLew95')
+  
 
 
 
