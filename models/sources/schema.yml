@@ -85,7 +85,7 @@ sources:
               - not_null
 
           - name: division
-            description: division id where the game was played (based on timestamp of the game)
+            description: division id where the game was played; may be NULL if the game is not associated with any division
 
           - name: white_username
             description: username of the player playing the white pieces
@@ -131,11 +131,22 @@ sources:
             description: time class for the game
             tests:
               - not_null
+              - accepted_values:
+                  values: ["rapid", "bullet", "blitz", "daily"]
 
           - name: rules
             description: chess rules applied in the game
             tests:
               - not_null
+              - accepted_values:
+                  values:
+                    [
+                      "bughouse",
+                      "kingofthehill",
+                      "chess",
+                      "chess960",
+                      "threecheck",
+                    ]
 
           - name: end_time
             description: timestamp when the game ended

@@ -1,0 +1,202 @@
+version: 2
+
+models:
+  - name: division_stats_overview
+    description: Contains calculated division statistics based on stream of division stats gathered directly from chess.com
+
+    columns:
+      - name: ts
+        description: timestamp when the stats where gathered
+        tests:
+          - not_null
+
+      - name: division
+        description: chess.com division id
+        tests:
+          - not_null
+          - relationships:
+              to: source('chesscom', 'division')
+              field: id
+
+      - name: username
+        description: chess.com username
+        tests:
+          - not_null
+
+      - name: ranking
+        description: rank in the division, starts at 1
+        tests:
+          - not_null
+
+      - name: trophy
+        description: trophy score count
+        tests:
+          - not_null
+
+      - name: is_most_recent
+        description: flag indicating whether these are the most recent stats (0 = false, 1 = true)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+
+      - name: downtime
+        description: downtime (rest) calculated based on changing score, when both the 5 minute and 15 minute score delta are 0
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 5]
+
+      - name: delta_60min
+        description: score delta over 1 hour
+
+      - name: delta_1d
+        description: score delta over 1 day
+
+      - name: delta_2d
+        description: score delta over 2 days
+
+      - name: downtime_1d
+        description: sum of rest over 1 day
+
+      - name: downtime_2d
+        description: sum of rest over 2 days
+
+  - name: division_games
+    description: contains games played in a division with focus on the player of interest, regardless on whether they were playing white or black pieces
+    columns:
+      - name: id
+        description: chess.com id of the game
+        tests:
+          - not_null
+
+      - name: username
+        description: chess.com username for which this game was retrieved
+        tests:
+          - not_null
+
+      - name: division
+        description: division id where the game was played; may be NULL if the game is not associated with any division
+
+      - name: white_username
+        description: username of the player playing the white pieces
+        tests:
+          - not_null
+
+      - name: white_rating
+        description: rating of the player playing the white pieces
+        tests:
+          - not_null
+
+      - name: white_result
+        description: end game result for the player playing the white pieces
+        tests:
+          - not_null
+
+      - name: black_username
+        description: username of the player playing the black pieces
+        tests:
+          - not_null
+
+      - name: black_rating
+        description: rating of the player playing the black pieces
+        tests:
+          - not_null
+
+      - name: black_result
+        description: end game result for the player playing the black pieces
+        tests:
+          - not_null
+
+      - name: url
+        description: url to the view of the game on chess.com
+        tests:
+          - not_null
+
+      - name: time_control
+        description: time control for the game, in seconds, with possible move increments
+        tests:
+          - not_null
+
+      - name: time_class
+        description: time class for the game
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["rapid", "bullet", "blitz", "daily"]
+
+      - name: rules
+        description: chess rules applied in the game
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                ["bughouse", "kingofthehill", "chess", "chess960", "threecheck"]
+
+      - name: end_time
+        description: timestamp when the game ended
+        tests:
+          - not_null
+
+      - name: user_color
+        description: which color was the user of interest (denoted by username) playing
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["white", "black"]
+
+      - name: user_rating
+        description: rating of the user of interest (denoted by username) at the end of the game
+        tests:
+          - not_null
+
+      - name: user_result
+        description: result of the game for the user of interest (denoted by username)
+        tests:
+          - not_null
+
+      - name: opponent_rating
+        description: opponent's rating at the end of the game
+        tests:
+          - not_null
+
+      - name: opponent_result
+        description: opponent's result at the end of the game
+        tests:
+          - not_null
+
+      - name: opening
+        description: long name of the opening, retrieved from game's PGN
+
+      - name: opening_code
+        description: standard chess opening code
+
+      - name: opening_short
+        description: short name of the opening, based on the opening code
+
+  - name: win_streaks
+    description: Contains calculated win streaks (games won in a row) per division and player
+
+    columns:
+      - name: username
+        description: chess.com username
+        tests:
+          - not_null
+
+      - name: division
+        description: chess.com division id
+        tests:
+          - not_null
+          - relationships:
+              to: source('chesscom', 'division')
+              field: id
+
+      - name: streak
+        description: number of wins in a row
+        tests:
+          - not_null
+
+      - name: streak_start
+        description: timestamp when the streak started
+        tests:
+          - not_null
