@@ -8,63 +8,142 @@ sources:
         columns:
           - name: id
             description: Primary artificial key
+            tests:
+              - not_null
+              - unique
+
           - name: ts
             description: timestamp when the data was gathered
+            tests:
+              - not_null
+
           - name: division
             description: division id
+            tests:
+              - not_null
+
           - name: username
             description: chess.com username
+            tests:
+              - not_null
+
           - name: ranking
             description: Rank in the division at the timestamp given
+            tests:
+              - not_null
+
           - name: trophy
             description: Number of trophy points
+            tests:
+              - not_null
       - name: division
         columns:
           - name: id
             description: chess.com id of the division
+            tests:
+              - not_null
+              - unique
+
           - name: level
             description: division level code (e.g. champion, silver)
+            tests:
+              - not_null
+
           - name: description
             description: Name of the division
+            tests:
+              - not_null
+
           - name: players
             description: array of players of interest participating in the division
+
           - name: start_time
             description: start date and time of the division in UTC
+            tests:
+              - not_null
+
           - name: end_time
             description: end date and time of the division in UTC
+            tests:
+              - not_null
+
           - name: is_active
             description: flag whether a given division is currently actively monitored
+            tests:
+              - not_null
       - name: games
         columns:
           - name: id
             description: chess.com id of the game
+            tests:
+              - not_null
+              - unique
+
           - name: username
             description: chess.com username for which this game was retrieved
+            tests:
+              - not_null
+
           - name: division
             description: division id where the game was played (based on timestamp of the game)
+
           - name: white_username
             description: username of the player playing the white pieces
+            tests:
+              - not_null
+
           - name: white_rating
             description: rating of the player playing the white pieces
+            tests:
+              - not_null
+
           - name: white_result
             description: end game result for the player playing the white pieces
+            tests:
+              - not_null
+
           - name: black_username
             description: username of the player playing the black pieces
+            tests:
+              - not_null
+
           - name: black_rating
             description: rating of the player playing the black pieces
+            tests:
+              - not_null
+
           - name: black_result
             description: end game result for the player playing the black pieces
+            tests:
+              - not_null
+
           - name: url
             description: url to the view of the game on chess.com
+            tests:
+              - not_null
+
           - name: time_control
             description: time control for the game, in seconds, with possible move increments
+            tests:
+              - not_null
+
           - name: time_class
             description: time class for the game
+            tests:
+              - not_null
+
           - name: rules
             description: chess rules applied in the game
+            tests:
+              - not_null
+
           - name: end_time
             description: timestamp when the game ended
+            tests:
+              - not_null
+
           - name: opening
             description: chess.com name of the opening
+
           - name: opening_code
             description: standard opening code
