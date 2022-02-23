@@ -29,6 +29,9 @@ def update_sheet(spreadsheet_id, headers, rows):
     gc = gspread.service_account()
     sh = gc.open_by_key(spreadsheet_id)
     data = sh.worksheet('Data')
+    # clear the worksheet, the entire dataset is uploaded anyway
+    # and in case a new division starts, it will have fewer rows than the previous one
+    data.clear()
     data.update('A1', [headers])
     data.update('A2', rows)
 
