@@ -1,3 +1,4 @@
+from code.common import retry
 from db import setup_db
 import config
 import gspread
@@ -25,6 +26,7 @@ def get_stats_data(session):
     return list(records[0].keys()), list(map(lambda r: (r[0], r[1].isoformat(), *r[2:]), records))
 
 
+@retry
 def update_sheet(spreadsheet_id, headers, rows):
     gc = gspread.service_account()
     sh = gc.open_by_key(spreadsheet_id)

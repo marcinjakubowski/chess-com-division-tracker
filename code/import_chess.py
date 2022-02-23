@@ -6,7 +6,7 @@ import argparse
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
-from common import generate_months
+from common import generate_months, retry
 from db import Game, Stat, Division, Db
 import re
 
@@ -18,8 +18,9 @@ def standing_to_record(division, el):
     return Stat(division, el['username'], int(el['stats']['trophyCount']), int(el['stats']['ranking']))
 
 
+@retry
 def get_player_division(username):
-    url = f'https://www.chess.com/callback/leagues/user-league/search/{username}'
+    url = f'https://www.chess.com/callback/leaguez/user-league/search/{username}'
     req = Http.request('GET', url)
     res = json.loads(req.data)
 
@@ -35,7 +36,7 @@ def get_player_division(username):
 
     return Division(id, level, description, start_time, end_time, is_active)
 
-
+@retry
 def get_division_data(level, division):
     url = f'https://www.chess.com/leagues/{level}/{division}'
     req = Http.request('GET', url)
@@ -56,6 +57,7 @@ def get_user_games(username: str, start_date: datetime, end_date: datetime):
                   )
 
 
+@retry
 def get_user_games_by_url(url):
     username = re.match(r".*\/player\/(.*?)/", url).groups()[0]
     req = Http.request('GET', url)
@@ -102,6 +104,13 @@ if __name__ == "__main__":
     if not division.is_active:
         exit(1)
 
+
+    # standings take priority over games, so fetch those first
+    # it's not really important if games fail as they will all get fetched 
+    # the next time anyway
+    standings = get_division_data(division.level, division.id)
+    db.add_standings(standings)
+
     # ensure games are downloaded for the player passed from the argument
     # as well as any other players specified in the division
     # use case folding as the username case in the db and from the arg can differ
@@ -111,23 +120,9 @@ if __name__ == "__main__":
     for player in players:
         games = list(map(lambda g: {**g.to_dict(), "division": division.id},
                             get_user_games(player, division.start_time, division.end_time)))
-        db.add_games(games, commit=False)
+        db.add_games(games)
 
-    retry_count = 0
-    finished = False
 
-    # attempt to get division data 5 times, catching any exceptions (http, wrong content, whatever)
-    while not finished:
-        # noinspection PyBroadException
-        try:
-            standings = get_division_data(division.level, division.id)
-            db.add_standings(standings)
-            finished = True
-        except Exception as e:
-            retry_count += 1
-            if retry_count >= 5:
-                raise e
-            sleep(1.0)
 
 
 
