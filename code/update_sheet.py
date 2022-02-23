@@ -1,7 +1,8 @@
-from code.common import retry
-from db import setup_db
 import config
 import gspread
+
+from common import retry
+from db import setup_db
 
 
 def get_stats_data(session):
