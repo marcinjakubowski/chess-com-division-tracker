@@ -105,7 +105,8 @@ if __name__ == "__main__":
     # ensure games are downloaded for the player passed from the argument
     # as well as any other players specified in the division
     # use case folding as the username case in the db and from the arg can differ
-    players = set({v.casefold(): v for v in division.players + [username]}.values())
+    all_players = [username] if (p := division.players) is None else p + [username]
+    players = set({v.casefold(): v for v in all_players}.values())
 
     for player in players:
         games = list(map(lambda g: {**g.to_dict(), "division": division.id},

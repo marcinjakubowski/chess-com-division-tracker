@@ -28,6 +28,7 @@ class Division(Base):
         self.start_time = start_time
         self.end_time = end_time
         self.is_active = is_active
+        self.players = []
 
 class Stat(Base):
     __tablename__ = 'division_stats'
