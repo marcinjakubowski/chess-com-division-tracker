@@ -5,6 +5,7 @@ sources:
     schema: public
     tables:
       - name: division_stats
+        description: division statistics gathered by the Python importer import_chess.py
         columns:
           - name: id
             description: Primary artificial key
@@ -37,6 +38,7 @@ sources:
             tests:
               - not_null
       - name: division
+        description: contains chess.com divisions tracked by the Python tracker
         columns:
           - name: id
             description: chess.com id of the division
@@ -72,6 +74,7 @@ sources:
             tests:
               - not_null
       - name: games
+        description: games gathered by the Python importer import_chess.py
         columns:
           - name: id
             description: chess.com id of the game
