@@ -1,5 +1,7 @@
+import sys
 from datetime import datetime
 from time import sleep
+
 
 
 def flat_map(f, xs):
@@ -35,7 +37,7 @@ def retry(func=None, /, *, retries=5, delay=1.0):
                     return func(*args, **kwargs)
                 except Exception as e:
                     retry_count += 1
-                    print(f"retrying {retry_count}...")
+                    print(f"Retrying {func.__name__} because of {e.__class__.__name__}: {retry_count}...", file=sys.stderr)
                     if retry_count >= retries:
                         raise e
                     sleep(delay)
