@@ -1,0 +1,10 @@
+[db]
+username = foo
+password = v3ry#C0mpl3x!Password*
+port = 9876
+host = postgres.example.com
+db = chesscom
+
+[sheet]
+id = abcdefgh
+
