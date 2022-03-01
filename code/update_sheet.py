@@ -1,5 +1,6 @@
 import config
 import gspread
+import sys
 
 from common import retry
 from db import setup_db
@@ -43,4 +44,5 @@ if __name__ == "__main__":
     config = config.get_config()
     session = setup_db(config['dsn'])
     headers, sheet_data = get_stats_data(session)
-    update_sheet(config['sheet_id'], headers, sheet_data)
+    sheet_id = sys.argv[1] if len(sys.argv) > 1 else config['sheet_id']
+    update_sheet(sheet_id, headers, sheet_data)
