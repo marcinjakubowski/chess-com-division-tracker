@@ -41,7 +41,7 @@ Google Data Studio based dashboard using two data sources:
 1. **Standings** - Google Sheet with data exported from the database
 2. **Games played** - directly from database
 
-![image](https://user-images.githubusercontent.com/2545419/156153288-2ed25460-85d2-4c5a-9b31-232f6c1a60a4.png)
+![image](https://user-images.githubusercontent.com/2545419/156154515-ac645c1f-c351-4b9a-bd64-355ecf128010.png)
 ![image](https://user-images.githubusercontent.com/2545419/156153338-7ef09248-d4b0-4e69-ac44-5dfb03a120b0.png)
 ![image](https://user-images.githubusercontent.com/2545419/156153480-bd4cde90-9b98-4e76-9b0d-8dfe29277d22.png)
 ![image](https://user-images.githubusercontent.com/2545419/156153572-f08c294d-f6d8-4b70-af8f-d46a0ceba4c2.png)
