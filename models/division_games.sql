@@ -17,7 +17,7 @@ WITH data AS (
          , {{ match_username('games.white_rating', 'games.black_rating') }} AS user_rating
          , {{ match_username('games.white_result', 'games.black_result') }} AS user_result
          , {{ match_username('games.black_rating', 'games.white_rating') }} AS opponent_rating
-         , {{ match_username('games.black_rating', 'games.white_rating') }} AS opponent_result
+         , {{ match_username('games.black_result', 'games.white_result') }} AS opponent_result
          , games.opening
          , games.opening_code
          , openings.name AS opening_short
