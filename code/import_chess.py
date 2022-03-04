@@ -7,6 +7,7 @@ import api
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Import chess.com league and games data for a given player')
     parser.add_argument('username', help='chess.com username')
+    parser.add_argument('-o', '--only', choices=['standings', 'games'], help='only download either standings or games')
 
     args = parser.parse_args()
     username = args.username
@@ -23,8 +24,13 @@ if __name__ == "__main__":
     # standings take priority over games, so fetch those first
     # it's not really important if games fail as they will all get fetched 
     # the next time anyway
-    standings = api.get_division_data(division.level, division.id)
-    db.add_standings(standings)
+    if not args.only or args.only == 'standings':
+        standings = api.get_division_data(division.level, division.id)
+        db.add_standings(standings)
+
+
+    if args.only == 'standings':
+        exit(0)
 
     # ensure games are downloaded for the player passed from the argument
     # as well as any other players specified in the division
