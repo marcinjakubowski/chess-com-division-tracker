@@ -41,7 +41,8 @@ if __name__ == "__main__":
     for player in players:
         games = list(map(lambda g: {**g.to_dict(), "division": division.id},
                             api.get_user_games(player, division.start_time, division.end_time)))
-        db.add_games(games)
+        if len(games) > 0:
+            db.add_games(games)
 
 
 
